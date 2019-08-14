@@ -1,0 +1,193 @@
+---
+title: "HUDK4051: Social Network Analysis"
+author: "Meijuan Zeng"
+date: "3/7/2019"
+output: html_document
+---
+
+In this assignment you will be generating and analyzing three social networks (also known as graphs or sociograms) based on three different measures. You will be using data from:
+
+Representing Classroom Social Structure. Melbourne: Victoria Institute of
+Secondary Education, M. Vickers and S. Chan, (1981)
+
+Available from the Index of Complex Networks ([ICON](https://icon.colorado.edu/#!/))
+
+The data were collected by Vickers & Chan from 29 seventh grade students in a school in Victoria, Australia. Students were asked to nominate their classmates on a number of relations including the following three "layers":  
+
+1. Who do you get on with in the class?  
+2. Who are your best friends in the class?  
+3. Who would you prefer to work with?  
+
+You have a data set for each of these questions, please complete the following tasks.
+
+## Data Wrangling
+
+Manipulate each of the data sets so that it is suitable for building a social network using iGraph.
+
+```{r}
+library(dplyr)
+DF1 <- read.csv('get.on.with.csv',header = TRUE)
+DF2 <- read.csv('best.friends.csv',header = TRUE)
+DF3 <- read.csv('work.with.csv',header = TRUE)
+#Prepare to create EDGE 
+E1 <-DF1%>%select(from,to)%>%count(from,to)
+names(E1) <- c("from", "to", "count")
+E2 <-DF2%>%select(from,to)%>%count(from,to)
+names(E2) <- c("from", "to", "count")
+E3 <-DF3%>%select(from,to)%>%count(from,to)
+names(E3) <- c("from", "to", "count")
+#Prepare to create VERTEX
+V1 <-DF1%>%select(from,gender.from)
+V1 <- unique(V1)
+names(V1) <- c('id','gender.from')
+V2 <-DF2%>%select(from,gender.from)
+V2 <- unique(V2)
+names(V2) <- c('id','gender.from')
+V3 <-DF3%>%select(from,gender.from)
+V3 <- unique(V3)
+names(V3) <- c('id','gender.from')
+# Disciplinary action count for students who are connected
+total_E1 <- E1 %>% group_by(to) %>% summarize(count = sum(count))
+names(total_E1) <- c('id','count')
+V1 <- full_join(V1,total_E1,by='id')
+total_E2 <- E2 %>% group_by(to) %>% summarize(count = sum(count))
+names(total_E2) <- c('id','count')
+V2 <- full_join(V2,total_E2,by='id')
+total_E3 <- E3 %>% group_by(to) %>% summarize(count = sum(count))
+names(total_E3) <- c('id','count')
+V3 <- full_join(V3,total_E3,by='id')
+V3$count[is.na(V3$count)] <- 0
+```
+
+## Visualize the Networks
+
+Create a graph for each of the data sets, are the graphs directed or undirected? Visualize each of the graphs you have created and color the nodes according to gender. Save pdfs of your graphs in this directory for upload to Github.
+
+```{r}
+library(igraph)
+g1 <- graph.data.frame(E1, directed=TRUE, vertices=V1)
+plot(g1,layout=layout.fruchterman.reingold, 
+     vertex.color=as.factor(V1$gender.from), 
+     edge.arrow.size = 0.5,
+     edge.width=E1$count,vertex.size = V1$count)
+
+g2 <- graph.data.frame(E2, directed=TRUE, vertices=V2)
+plot(g2,layout=layout.fruchterman.reingold, 
+     vertex.color=as.factor(V2$gender.from), 
+     edge.arrow.size = 0.5,
+     edge.width=E2$count,vertex.size = V2$count)
+
+g3 <- graph.data.frame(E3, directed=TRUE, vertices=V3)
+plot(g3,layout=layout.fruchterman.reingold, 
+     vertex.color=as.factor(V3$gender.from), 
+     edge.arrow.size = 0.5,
+     edge.width=E3$count,vertex.size = V3$count)
+
+```
+
+## Centrality Measures
+
+Who in the class has the highest degree centrality for each measure?
+```{r}
+best1<-centr_degree(g1)
+which(best1$res == max(best1$res))
+#No.11 is the best to get on with.
+
+best2<-centr_degree(g2)
+which(best2$res == max(best2$res))
+#No.8 is the best friend who is considered by others.
+
+best3<-centr_degree(g3)
+which(best3$res == max(best3$res))
+#No.6 is the best one to be considered working with.
+
+```
+
+Does **degree centrality** mean the same thing for each of your networks? Does it make sense for each of your networks?
+
+#There is a slight difference in stregth of relationship among each part.In best friends the relationship is the strongest due to its highest centralization value, meaning that No.8 is quite popular in the class and many of the classmates want to be his or her friend. 
+
+Who in the class has the highest closeness centrality?
+
+```{r}
+closeness(g1)
+which.max(closeness(g1))
+#No.8 has the highest closeness to get on with.
+
+closeness(g2)
+which.max(closeness(g2))
+#No.8 has the highest closeness as the best friend with others.
+
+closeness(g3)
+which.max(closeness(g3))
+#No.9 has the highest closeness to work with. 
+```
+
+How does **betweeness centrality** differ from degree centrality? Is one more useful than the other? Does their utility differ between your three networks?
+#Degree centrality is defined as the number of links incident upon a node and it can be intepreted in terms of the immediate risk of a node for catching whatever is flowing through the network. Betweeness centrality is the measure of a vertex within a graph.It quantifies the number of times a node acts as a bridge along the shortest path between other nodes. We can see the control of a human on interaction with others in beteweeness centrality. I think both are useful, but their utility differs between my three networks. One is to see the flow of networks and the other is to see the closeness of interaction between an indiviudal and others. 
+
+## Simple structures
+
+Count the number of dyads and the number and type of triads using the following commands.
+```{r}
+dyad_census(g1)
+dyad_census(g2)
+dyad_census(g3)
+
+```
+[Documentation](http://igraph.org/r/doc/dyad_census.html)
+
+```{r}
+triad_census(g1)
+triad_census(g2)
+triad_census(g3)
+```
+[Documentation](http://igraph.org/r/doc/triad_census.html)
+
+Do these metrics tell you anything about the networks? If so what?
+#The number of dyad shows how many smallest "cliques" and "triads" were formed, and they were different in each network. The difference told me that there was no true relationship among each other and the class was not socially connected since there were lots of null sets. I think the number of null sets seems common in class.
+
+## Cliques
+
+Answer the following questions using the [clique functions](http://igraph.org/r/doc/cliques.html)
+
+What is the size of the largest clique(s) in each of the three networks?
+
+```{r}
+clique_num(g1)
+clique_num(g2)
+clique_num(g3)
+```
+
+Which nodes/vertices are in the largest cliques for the three networks? Is there much overlap?
+
+#All of the nodes were in the largest cliques for these 3 networks and there was a lot of overlap.
+```{r}
+largest_cliques(g1)
+largest_cliques(g2)
+largest_cliques(g3)
+```
+
+How many **maximal cliques** are there in each of the networks?
+
+```{r}
+count_max_cliques(g1)
+count_max_cliques(g2)
+count_max_cliques(g3)
+```
+
+## Components & Cutpoints
+
+Find the cutpoints (articulation points) for each of the three networks you generated. What does this tell you about the graphs? Does what you find match a visual exploration of the networks?
+
+#There were no cutpoints in graph 1, but 1 in graph2 and 3 respectively. When we remove No.13 in graph2 and graph3, the 2 separate graphs would be created, meaning that when No.13 is removed, the connetion weight or direction of networks would change.
+```{r}
+articulation_points(g1)
+articulation.points(g2)
+articulation.points(g3)
+```
+
+
+## Putting it all together
+
+Write a narrative description of the social ties among members of this 7th grade class using the network, centrality and structural metrics you have developed. Can you provide any recommendations to the teacher of this class based on your analysis? What other information would you want to know? Can you remeber being in seventh grade, does this reflect your experience?
