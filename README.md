@@ -30,7 +30,7 @@ I used three datasets: get.on.with.csv, best.friends.csv, work.with.csv. Each da
 5. Measure centrality, betweeness, and clustering for each graph. 
 
 Graph visualization:
-* [Get on with](https://github.com/tomato018/social-network-analysis/blob/master/get%20on%20with.pdf)
+* [Get on with](https://github.com/tomato018/Social-network-analysis-of-class/blob/master/get_on_with.png)
 * [best friends](https://github.com/tomato018/Social-network-analysis-of-class/blob/master/best_friends.png)
 * [Prefer to work with](https://github.com/tomato018/social-network-analysis/blob/master/prefer%20to%20work%20with.pdf)
 
